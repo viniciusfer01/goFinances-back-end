@@ -3,6 +3,7 @@ import csvParse from 'csv-parse';
 import fs from 'fs';
 import Transaction from '../models/Transaction';
 import Category from '../models/Category';
+import TransactionsRepository from '../repositories/TransactionsRepository';
 
 interface CSVTransaction {
   title: string;
@@ -14,6 +15,9 @@ interface CSVTransaction {
 class ImportTransactionsService {
   async execute(filePath: string): Promise<Transaction[]> {
     // TODO
+    const transactionRepository = getCustomRepository(TransactionsRepository);
+    const categoriesRepository = getRepository(Category);
+
     const constactsReadStream = fs.createReadStream(filePath);
 
     const parsers = csvParse({
@@ -62,6 +66,23 @@ class ImportTransactionsService {
 
     const finalCategories = [...newCategories, ...existentCategories];
 
+    const createdTransactions = transactionRepository.create(
+      transactions.map(transaction => ({
+
+        title: transaction.title,
+          type: transaction.type,
+          value: transaction.value,
+          category: finalCategories.find(
+            category => category.title === transaction.category,
+          ),
+        })),
+    );
+
+    await transactionRepository.save(createdTransactions);
+
+    await fs.promises.unlink(filePath);
+
+    return createdTransactions;
   }
 }
 

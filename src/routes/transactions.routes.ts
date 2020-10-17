@@ -36,6 +36,8 @@ transactionsRouter.post('/', async (request, response) => {
     type,
     category,
   });
+
+  return response.json(transaction);
 });
 
 transactionsRouter.delete('/:id', async (request, response) => {
